@@ -34,6 +34,7 @@ class _S2TPageState extends State<S2THomePage> {
   String _speech2Txt = "Press mic to speak";
   bool _speaking = false;
   bool _inited = false;
+  double _curFont = 26.0;
   SpeechToText _speech = null;
   List<LocaleName> _localeNames = [];
   String _currentLocaleId = "";
@@ -52,40 +53,43 @@ class _S2TPageState extends State<S2THomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(widget.title + " - [" + _currentLocaleId + "]"),
+        actions: <Widget>[
+          Padding(
+              padding: EdgeInsets.only(right: 20.0),
+              child: GestureDetector(
+                onTap: increaseFont,
+                child: Icon(
+                  Icons.add,
+                  size: 26.0,
+                ),
+              )),
+          Padding(
+              padding: EdgeInsets.only(right: 20.0),
+              child: GestureDetector(
+                onTap: decreaseFont,
+                child: Icon(
+                  Icons.remove,
+                  size: 26.0,
+                ),
+              )),
+        ],
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+	  children: getLocaleList(context),
+        ),
       ),
       body: SingleChildScrollView(
         child: Column(
           children: <Widget>[
             Container(
-              child: Column(
-                children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: <Widget>[
-                      DropdownButton(
-                        onChanged: (selectedVal) => switchLang(selectedVal),
-                        value: _currentLocaleId,
-                        items: _localeNames
-                            .map(
-                              (localeName) => DropdownMenuItem(
-                                value: localeName.localeId,
-                                child: Text(localeName.name),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ],
-                  ), // Row
-                ],
-              ),
-            ), // Conainer drop down
-            Container(
               padding: const EdgeInsets.fromLTRB(30.0, 30.0, 30.0, 150.0),
               child: Text(
                 '$_speech2Txt',
                 style: TextStyle(
-                  fontSize: 28.0,
+                  fontSize: _curFont,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 2.0,
                 ), // style
@@ -155,5 +159,39 @@ class _S2TPageState extends State<S2THomePage> {
     setState(() {
       _currentLocaleId = selectedVal;
     });
+  }
+
+  void increaseFont() {
+    if (_curFont < 40.0) {
+      setState(() {
+        _curFont += 1.0;
+      });
+    }
+  }
+
+  void decreaseFont() {
+    if (_curFont > 20.0) {
+      setState(() {
+        _curFont -= 1.0;
+      });
+    }
+  }
+
+  List<Widget> getLocaleList(BuildContext context) {
+    List<Widget> children = [];
+    _localeNames.forEach((localeName) {
+      children.add(
+        new ListTile(
+          title: new Text(localeName.name),
+          onTap: () => onLocaleSelect(context, localeName),
+	)
+      );
+    });
+    return children;
+  }
+
+  void onLocaleSelect(BuildContext context, LocaleName localeName) {
+    switchLang(localeName.localeId);
+    Navigator.pop(context);
   }
 }
