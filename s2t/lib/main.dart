@@ -78,7 +78,7 @@ class _S2TPageState extends State<S2THomePage> {
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
-	  children: getLocaleList(context),
+          children: getLocaleList(context),
         ),
       ),
       body: SingleChildScrollView(
@@ -180,12 +180,10 @@ class _S2TPageState extends State<S2THomePage> {
   List<Widget> getLocaleList(BuildContext context) {
     List<Widget> children = [];
     _localeNames.forEach((localeName) {
-      children.add(
-        new ListTile(
-          title: new Text(localeName.name),
-          onTap: () => onLocaleSelect(context, localeName),
-	)
-      );
+      children.add(new ListTile(
+        title: new Text(localeName.name),
+        onTap: () => onLocaleSelect(context, localeName),
+      ));
     });
     return children;
   }
