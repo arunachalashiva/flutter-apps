@@ -33,12 +33,19 @@ class S2THomePage extends StatefulWidget {
 class _S2TPageState extends State<S2THomePage> {
   String _speech2Txt = "Press mic to speak";
   bool _speaking = false;
+  bool _inited = false;
   SpeechToText _speech = null;
+  List<LocaleName> _localeNames = [];
+  String _currentLocaleId = "";
 
   @override
   void initState() {
     super.initState();
-    _speech = SpeechToText();
+    initSpeechState().then((result) {
+      setState(() {
+        _speaking = false;
+      });
+    });
   }
 
   @override
@@ -48,18 +55,44 @@ class _S2TPageState extends State<S2THomePage> {
         title: Text(widget.title),
       ),
       body: SingleChildScrollView(
-	reverse:true,
-        child: Container(
-	  padding: const EdgeInsets.fromLTRB(30.0, 30.0, 30.0, 150.0),
-	  child: Text(
-	    '$_speech2Txt',
-	    style: TextStyle(
-              fontSize: 28.0,
-	      fontWeight: FontWeight.bold,
-	      letterSpacing: 2.0,
-	    ), // style
-          ), // child
-        ), // Container
+        child: Column(
+          children: <Widget>[
+            Container(
+              child: Column(
+                children: <Widget>[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: <Widget>[
+                      DropdownButton(
+                        onChanged: (selectedVal) => switchLang(selectedVal),
+                        value: _currentLocaleId,
+                        items: _localeNames
+                            .map(
+                              (localeName) => DropdownMenuItem(
+                                value: localeName.localeId,
+                                child: Text(localeName.name),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                  ), // Row
+                ],
+              ),
+            ), // Conainer drop down
+            Container(
+              padding: const EdgeInsets.fromLTRB(30.0, 30.0, 30.0, 150.0),
+              child: Text(
+                '$_speech2Txt',
+                style: TextStyle(
+                  fontSize: 28.0,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2.0,
+                ), // style
+              ), // child
+            ), // Container text
+          ],
+        ),
       ), // body
       floatingActionButton: FloatingActionButton(
         onPressed: _getSpeech2Txt,
@@ -71,23 +104,32 @@ class _S2TPageState extends State<S2THomePage> {
 
   void _getSpeech2Txt() async {
     if (!_speaking) {
-      bool hasSpeech = await _speech.initialize(onStatus: statusListener, onError: errorListener);
-      if (hasSpeech) {
-        setState(() {
-	  _speaking = true;
-          _speech2Txt = "Listening";
-	});
-	_speech.listen(
-	  onResult: resultListener,
-	  cancelOnError: true,
-	);
-      }
+      setState(() {
+        _speaking = true;
+        _speech2Txt = "Listening";
+      });
+      _speech.listen(
+        onResult: resultListener,
+        localeId: _currentLocaleId,
+        cancelOnError: true,
+      );
     } else {
       setState(() {
         _speaking = false;
         _speech2Txt = "Press mic to speak";
       });
       _speech.stop();
+    }
+  }
+
+  Future<void> initSpeechState() async {
+    _speech = SpeechToText();
+    bool hasSpeech = await _speech.initialize(
+        onStatus: statusListener, onError: errorListener);
+    if (hasSpeech) {
+      _localeNames = await _speech.locales();
+      var systemLocale = await _speech.systemLocale();
+      _currentLocaleId = systemLocale.localeId;
     }
   }
 
@@ -106,6 +148,12 @@ class _S2TPageState extends State<S2THomePage> {
   void errorListener(SpeechRecognitionError error) {
     setState(() {
       _speech2Txt = "Error in Listener. Try again";
+    });
+  }
+
+  void switchLang(String selectedVal) {
+    setState(() {
+      _currentLocaleId = selectedVal;
     });
   }
 }

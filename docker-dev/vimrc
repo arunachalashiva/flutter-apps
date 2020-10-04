@@ -1,0 +1,189 @@
+set nocompatible
+filetype off
+
+set rtp+=~/.vim/bundle/Vundle.vim
+set rtp+=~/.fzf
+call vundle#begin()
+
+" Vundle to manage vundle
+Plugin 'VundleVim/Vundle.vim'
+
+" Nerdtree plugin
+Plugin 'scrooloose/nerdtree'
+Plugin 'xuyuanp/nerdtree-git-plugin'
+
+" Nerdcommenter plugin
+Plugin 'scrooloose/nerdcommenter'
+
+" Vim-Airline plugin
+Plugin 'vim-airline/vim-airline'
+
+" Vim-Airline theme plugin
+Plugin 'vim-airline/vim-airline-themes'
+
+" Vim-fugitive git plugin
+Plugin 'tpope/vim-fugitive'
+
+" Show git diff in gutter
+Plugin 'airblade/vim-gitgutter'
+
+" Vim-Dispatch plugin
+Plugin 'tpope/vim-dispatch'
+
+" fzf
+Plugin 'junegunn/fzf'
+Plugin 'junegunn/fzf.vim'
+
+" Distraction free mode
+Plugin 'junegunn/goyo.vim'
+
+" Solarized color scheme
+Plugin 'altercation/vim-colors-solarized'
+
+" Onedark color scheme
+Plugin 'joshdick/onedark.vim'
+
+" Auto ctags update on file change
+Plugin 'soramugi/auto-ctags.vim'
+
+" Dart plugins
+Plugin 'dart-lang/dart-vim-plugin'
+Plugin 'natebosch/vim-lsc'
+Plugin 'natebosch/vim-lsc-dart'
+
+
+call vundle#end()
+filetype plugin indent on
+syntax on
+
+nnoremap <Leader>h :HelpVimide<CR>
+
+" nerdtree short cut to toggle open/close
+nnoremap <silent> <expr> <Leader>nt g:NERDTree.IsOpen() ? "\:NERDTreeClose<CR>" : bufexists(expand('%')) ? "\:NERDTreeFind<CR>" : "\:NERDTree<CR>"
+
+" fzf shortcuts for files and tags
+nnoremap <silent> <Leader>ff :call FzfFiles()<CR>
+nnoremap <silent> <Leader>ft :call FzfTags()<CR>
+nnoremap <silent> <Leader>fg :call FzfRg()<CR>
+nnoremap <silent> <Leader>fw :FindWord<CR>
+
+nnoremap <silent> <C-Right> :call BufferNext()<CR>
+nnoremap <silent> <C-Left> :call BufferPrevious()<CR>
+
+nnoremap <Leader>op :OpenProject 
+nnoremap <Leader>ot :OpenTerminal<CR>
+nnoremap <Leader>bd :bdelete<CR>
+
+" Airline settings
+let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#formatter = 'unique_tail'
+
+" fzf settings
+let g:fzf_tags_command = 'ctags -R'
+let g:fzf_layout = { 'window': 'enew' }
+
+let g:NERDSpaceDelims = 1
+let g:NERDTrimTrailingWhitespace = 1
+let g:NERDTreeMinimalUI=1
+
+" Color Schemes
+let g:solarized_termcolors = 256
+set background=dark
+silent! colorscheme solarized
+silent! call togglebg#map("<F5>")
+silent! colorscheme onedark
+
+" Open file from last location
+if has("autocmd")
+  autocmd BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
+endif
+
+" add yaml stuffs
+autocmd! BufNewFile,BufReadPost *.{yaml,yml} set filetype=yaml
+autocmd FileType yaml setlocal ts=2 sts=2 sw=2 expandtab
+
+set encoding=utf-8
+set switchbuf=usetab
+set tabline=[%t]
+set cursorline
+set number
+set incsearch
+" set spell
+
+" Disable fzf shortcuts in nerdtree buffer
+fun! FzfFiles()
+  if &filetype != "nerdtree"
+    exe ':Files'
+  endif
+endfun
+
+fun! FzfTags()
+  if &filetype != "nerdtree"
+    exe ':Tags'
+  endif
+endfun
+
+fun! FzfRg()
+  if &filetype != "nerdtree"
+    exe ':Rg'
+  endif
+endfun
+
+" Disable buf next and previous shortcut in nerdtree
+fun! BufferNext()
+  if &filetype != "nerdtree"
+    exe ':bnext'
+  endif
+endfun
+
+fun! BufferPrevious()
+  if &filetype != "nerdtree"
+    exe ':bprevious'
+  endif
+endfun
+
+" Change directory and refresh nerdtree
+fun! OpenProject(dir)
+  exe ':cd ' . a:dir
+  exe ':bufdo bwipeout'
+  exe ':NERDTreeCWD'
+endfun
+
+" Open bash terminal
+fun! OpenTerm()
+  exe ':terminal ++rows=10 bash'
+endfun
+
+" Run Rg search for current word under cursor
+fun! SearchWd()
+  let l:str = expand('<cword>') . '**'
+  exe ':Rg ' . l:str
+endfun
+
+fun! MyHelp()
+  echom("vimide shortcuts")
+  echom("'\\h'  - Display this help")
+  echom("'<ctrl-Left>'  - Switch to previous buffer")
+  echom("'<ctrl-Right>' - Switch to next buffer")
+  echom("'\\bd' - buffer delete - Deletes current buffer")
+  echom("'\\nt' - nerdtree toggle - Open/Close NERDTree")
+  echom("'\\ff' - find files - Open fzf Files")
+  echom("'\\ft' - find tags - Open fzf Tags")
+  echom("'\\fg' - find grep pattern - Open fzf Rg (grep)")
+  echom("'\\fw' - find grep pattern for current word under cursor using Rg")
+  echom("'\\op' - Open Project - Calls OpenProject <dir> directory and refresh NERDTree")
+  echom("'\\ot' - Open Terminal - Opens a bash terminal")
+  echom("")
+  echom("vimide commands")
+  echom("':OpenProject <dir>' - Switch to <dir> directory and refresh NERDTree")
+endfun
+
+" Command to change to a directory (also refreshes NERDTree)
+command! -nargs=1 -complete=dir OpenProject :call OpenProject(<q-args>)
+command! -nargs=0 HelpVimide :call MyHelp()
+command! -nargs=0 FindWord :call SearchWd()
+command! -nargs=0 OpenTerminal :call OpenTerm()
+
+setlocal tabstop=2
+setlocal shiftwidth=2
+setlocal expandtab
