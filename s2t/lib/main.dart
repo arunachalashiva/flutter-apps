@@ -4,192 +4,164 @@ import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 void main() {
-  runApp(S2TApp());
+  runApp(const S2TApp());
 }
 
 class S2TApp extends StatelessWidget {
+  const S2TApp({super.key});
+
+  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Speech2Text',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
       ),
-      home: S2THomePage(title: 'S2T'),
+      home: const S2THomePage(title: 'S2T'),
     );
   }
 }
 
 class S2THomePage extends StatefulWidget {
-  S2THomePage({Key key, this.title}) : super(key: key);
+  const S2THomePage({super.key, required this.title});
+
+  // This widget is the home page of your application. It is stateful, meaning
+  // that it has a State object (defined below) that contains fields that affect
+  // how it looks.
+
+  // This class is the configuration for the state. It holds the values (in this
+  // case the title) provided by the parent (in this case the App widget) and
+  // used by the build method of the State. Fields in a Widget subclass are
+  // always marked "final".
 
   final String title;
 
   @override
-  _S2TPageState createState() => _S2TPageState();
+  State<S2THomePage> createState() => _S2THomePageState();
 }
 
-class _S2TPageState extends State<S2THomePage> {
-  String _speech2Txt = "Press mic to speak";
+class _S2THomePageState extends State<S2THomePage> {
+  String _s2t = "Press mic to speek";
   bool _speaking = false;
   bool _inited = false;
-  double _curFont = 26.0;
-  SpeechToText _speech = null;
-  List<LocaleName> _localeNames = [];
+  double _currentFont = 26.0;
+  SpeechToText _speech = SpeechToText();
+  List<LocaleName> _localNames = [];
   String _currentLocaleId = "";
 
   @override
   void initState() {
     super.initState();
-    initSpeechState().then((result) {
-      setState(() {
-        _speaking = false;
-      });
+    initSpeech();
+  }
+
+  void initSpeech() async {
+    _inited = await _speech.initialize(onStatus: statusListener, onError: errorListener);
+    _localNames = await _speech.locales();
+    for (var localName in _localNames) {
+      print("${localName.name}");
+    }
+    setState(() {
     });
+  }
+
+  void resultListener(SpeechRecognitionResult result) {
+    setState(() {
+      _s2t = result.recognizedWords;
+    });
+  }
+
+  void statusListener(String status) {
+    setState(() {
+      //_s2t = "Listening";
+    });
+  }
+
+  void errorListener(SpeechRecognitionError error) {
+    setState(() {
+      _s2t = "Error in listener. Try Again.";
+    });
+  }
+
+  void startListening() async {
+    await _speech.listen(onResult: resultListener, localeId: _currentLocaleId);
+    setState(() {});
+  }
+
+  void stopListening() async {
+    await _speech.stop();
+    setState(() {});
+  }
+
+  void onLocaleSet(BuildContext context, LocaleName localeName) {
+    setState(() {
+          _currentLocaleId = localeName.localeId;
+     });
+     Navigator.pop(context);
+  }
+
+  List<Widget> getLocaleList(BuildContext context) {
+    List<ListTile> children = [];
+    for (var localeName in _localNames) {
+      children.add(ListTile(
+        title: Text(localeName.name),
+        onTap: () => onLocaleSet(context, localeName),
+      ));
+    }
+    return children;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title + " - [" + _currentLocaleId + "]"),
-        actions: <Widget>[
-          Padding(
-              padding: EdgeInsets.only(right: 20.0),
-              child: GestureDetector(
-                onTap: increaseFont,
-                child: Icon(
-                  Icons.add,
-                  size: 26.0,
-                ),
-              )),
-          Padding(
-              padding: EdgeInsets.only(right: 20.0),
-              child: GestureDetector(
-                onTap: decreaseFont,
-                child: Icon(
-                  Icons.remove,
-                  size: 26.0,
-                ),
-              )),
-        ],
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text(widget.title + " - [" + _currentLocaleId + "]" ),
       ),
       drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: getLocaleList(context),
+        child: ListView.builder(
+              itemCount: _localNames.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(_localNames[index].name),
+                  onTap: () => onLocaleSet(context, _localNames[index]),
+                );
+              },
         ),
       ),
       body: SingleChildScrollView(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Container(
               padding: const EdgeInsets.fromLTRB(30.0, 30.0, 30.0, 150.0),
-              child: Text(
-                '$_speech2Txt',
-                style: TextStyle(
-                  fontSize: _curFont,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2.0,
-                ), // style
-              ), // child
-            ), // Container text
+              child: GestureDetector(
+                onScaleUpdate: (details) {
+                  setState(() {
+                    _currentFont = _currentFont * details.scale;
+                    _currentFont = _currentFont < 26.0 ? 26.0 : (_currentFont > 44.0 ? 44.0 : _currentFont);
+                  });
+                },
+                child: Text(
+                  _s2t,
+                  style: TextStyle(
+                    fontSize: _currentFont,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2.0,
+                  )
+                ),
+              ),
+            ),
           ],
         ),
-      ), // body
-      floatingActionButton: FloatingActionButton(
-        onPressed: _getSpeech2Txt,
-        tooltip: 'Speak',
-        child: Icon(_speaking ? Icons.mic_rounded : Icons.mic_none_rounded),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _speech.isNotListening ? startListening : stopListening,
+        tooltip: 'Listen',
+        child: Icon(_speech.isNotListening ? Icons.mic_off : Icons.mic),
+      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
-  }
-
-  void _getSpeech2Txt() async {
-    if (!_speaking) {
-      setState(() {
-        _speaking = true;
-        _speech2Txt = "Listening";
-      });
-      _speech.listen(
-        onResult: resultListener,
-        localeId: _currentLocaleId,
-        cancelOnError: true,
-      );
-    } else {
-      setState(() {
-        _speaking = false;
-        _speech2Txt = "Press mic to speak";
-      });
-      _speech.stop();
-    }
-  }
-
-  Future<void> initSpeechState() async {
-    _speech = SpeechToText();
-    bool hasSpeech = await _speech.initialize(
-        onStatus: statusListener, onError: errorListener);
-    if (hasSpeech) {
-      _localeNames = await _speech.locales();
-      var systemLocale = await _speech.systemLocale();
-      _currentLocaleId = systemLocale.localeId;
-    }
-  }
-
-  void resultListener(SpeechRecognitionResult result) {
-    setState(() {
-      _speech2Txt = result.recognizedWords;
-    });
-  }
-
-  void statusListener(String status) {
-    setState(() {
-      _speech2Txt = "Listening";
-    });
-  }
-
-  void errorListener(SpeechRecognitionError error) {
-    setState(() {
-      _speech2Txt = "Error in Listener. Try again";
-    });
-  }
-
-  void switchLang(String selectedVal) {
-    setState(() {
-      _currentLocaleId = selectedVal;
-    });
-  }
-
-  void increaseFont() {
-    if (_curFont < 40.0) {
-      setState(() {
-        _curFont += 1.0;
-      });
-    }
-  }
-
-  void decreaseFont() {
-    if (_curFont > 20.0) {
-      setState(() {
-        _curFont -= 1.0;
-      });
-    }
-  }
-
-  List<Widget> getLocaleList(BuildContext context) {
-    List<Widget> children = [];
-    _localeNames.forEach((localeName) {
-      children.add(new ListTile(
-        title: new Text(localeName.name),
-        onTap: () => onLocaleSelect(context, localeName),
-      ));
-    });
-    return children;
-  }
-
-  void onLocaleSelect(BuildContext context, LocaleName localeName) {
-    switchLang(localeName.localeId);
-    Navigator.pop(context);
   }
 }

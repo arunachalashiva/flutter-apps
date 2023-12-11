@@ -1,4 +1,4 @@
-package org.arunachalashiva.s2t
+package com.example.s2t
 
 import io.flutter.embedding.android.FlutterActivity
 
