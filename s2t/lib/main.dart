@@ -1,3 +1,4 @@
+import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
@@ -13,28 +14,23 @@ class S2TApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Speech2Text',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+    return AdaptiveTheme(
+      light: ThemeData.light(useMaterial3: true),
+      dark: ThemeData.dark(useMaterial3: true),
+      initial: AdaptiveThemeMode.dark,
+      debugShowFloatingThemeButton: true,
+      builder: (theme, darkTheme) => MaterialApp(
+        title: 'Speech2Text',
+        theme: theme,
+        darkTheme: darkTheme,
+        home: const S2THomePage(title: 'S2T'),
       ),
-      home: const S2THomePage(title: 'S2T'),
     );
   }
 }
 
 class S2THomePage extends StatefulWidget {
   const S2THomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
 
   final String title;
 
@@ -43,11 +39,9 @@ class S2THomePage extends StatefulWidget {
 }
 
 class _S2THomePageState extends State<S2THomePage> {
-  String _s2t = "Press mic to speek";
-  bool _speaking = false;
-  bool _inited = false;
+  String _s2t = "Press mic to speak";
   double _currentFont = 26.0;
-  SpeechToText _speech = SpeechToText();
+  final SpeechToText _speech = SpeechToText();
   List<LocaleName> _localNames = [];
   String _currentLocaleId = "";
 
@@ -58,11 +52,10 @@ class _S2THomePageState extends State<S2THomePage> {
   }
 
   void initSpeech() async {
-    _inited = await _speech.initialize(onStatus: statusListener, onError: errorListener);
+    await _speech.initialize(onStatus: statusListener, onError: errorListener);
     _localNames = await _speech.locales();
-    for (var localName in _localNames) {
-      print("${localName.name}");
-    }
+    var systemLocale = await _speech.systemLocale();
+    _currentLocaleId = systemLocale?.localeId ?? '';
     setState(() {
     });
   }
@@ -74,9 +67,7 @@ class _S2THomePageState extends State<S2THomePage> {
   }
 
   void statusListener(String status) {
-    setState(() {
-      //_s2t = "Listening";
-    });
+    setState(() {});
   }
 
   void errorListener(SpeechRecognitionError error) {
@@ -118,7 +109,10 @@ class _S2THomePageState extends State<S2THomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title + " - [" + _currentLocaleId + "]" ),
+        title: Text("${widget.title} - [$_currentLocaleId]" ),
+        actions: [
+          IconButton(onPressed: () => AdaptiveTheme.of(context).toggleThemeMode(), icon: const Icon(Icons.lightbulb)),
+        ],
       ),
       drawer: Drawer(
         child: ListView.builder(
